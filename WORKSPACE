@@ -3,7 +3,7 @@ workspace(name = "com_github_johnynek_bazel_deps")
 git_repository(
     name = "io_bazel_rules_scala",
     remote = "git://github.com/zenreach/rules_scala",
-    commit = "576d15926b283c1665e2c5eab4ef417f82788fbb" # update this as needed
+    commit = "30c397b7ffc0b1ec7d40c270831eaa94bcf0d01c" # update this as needed
 )
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_repositories")
 scala_repositories()

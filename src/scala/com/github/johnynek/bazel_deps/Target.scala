@@ -31,16 +31,14 @@ object Target {
       def render: Doc =
         if (srcs.isEmpty) Doc.empty
         else {
-          renderList(Doc.text("["), srcs.toList.sorted, Doc.text("]"))(quote)
-            .grouped
+          renderList(Doc.text("["), srcs.toList.sorted, Doc.text("]"))(quote).grouped
         }
     }
     case class Globs(globs: List[String]) extends SourceList {
       def render: Doc =
         if (globs.isEmpty) Doc.empty
         else {
-          val gstr = renderList(Doc.text("["), globs, Doc.text("]"))(quote)
-            .grouped
+          val gstr = renderList(Doc.text("["), globs, Doc.text("]"))(quote).grouped
           Doc.text("glob(") + gstr + Doc.text(")")
         }
     }
@@ -54,47 +52,61 @@ case class Target(
   deps: Set[Label] = Set.empty,
   sources: Target.SourceList = Target.SourceList.Empty,
   exports: Set[Label] = Set.empty,
-  runtimeDeps: Set[Label] = Set.empty) {
+  runtimeDeps: Set[Label] = Set.empty
+) {
 
   def toDoc: Doc = {
     import Target._
-    /**
-     * e.g.
-     * scala_library(
-     *     name = "foo",
-     *     deps = [ ],
-     *     exports = [ ],
-     *     runtime_deps = [ ],
-     *     visibility = ["//visibility:public"]
-     * )
-     */
 
+    /**
+      * e.g.
+      * scala_library(
+      *     name = "foo",
+      *     deps = [ ],
+      *     exports = [ ],
+      *     runtime_deps = [ ],
+      *     visibility = ["//visibility:public"]
+      * )
+      */
     val langName = lang match {
-      case Language.Java => "java"
+      case Language.Java        => "java"
       case Language.Scala(_, _) => "scala"
     }
 
-    val targetType = Doc.text(s"${langName}_${kind}")
+    val targetType: Doc = Doc.text((lang, kind) match {
+      case (Language.Scala(_, _), Target.Library) => s"${langName}_import"
+      case _                                      => s"${langName}_${kind}"
+    })
 
     def sortKeys(items: List[(String, Doc)]): Doc = {
       // everything has a name
       val nm = ("name", quote(name.name))
-      implicit val ordDoc: Ordering[Doc] = Ordering.by { d: Doc => d.renderWideStream.mkString }
+      implicit val ordDoc: Ordering[Doc] = Ordering.by { d: Doc =>
+        d.renderWideStream.mkString
+      }
       val sorted = items.collect { case (s, d) if !(d.isEmpty) => (s, d) }.sorted
 
-      renderList(targetType + Doc.text("("), nm :: sorted, Doc.text(")")) { case (k, v) =>
-        k +: " = " +: v
+      renderList(targetType + Doc.text("("), nm :: sorted, Doc.text(")")) {
+        case (k, v) =>
+          k +: " = " +: v
       } + Doc.line.repeat(2)
     }
 
     def labelList(ls: Set[Label]): Doc =
-      renderList(Doc.text("["), ls.toList.map(_.asStringFrom(name.path)).sorted, Doc.text("]"))(quote)
+      renderList(Doc.text("["), ls.toList.map(_.asStringFrom(name.path)).sorted, Doc.text("]"))(
+        quote
+      )
 
-    sortKeys(List(
-      "visibility" -> renderList(Doc.text("["), List("//visibility:public"), Doc.text("]"))(quote),
-      "deps" -> labelList(deps),
-      "srcs" -> sources.render,
-      "exports" -> labelList(exports),
-      "runtime_deps" -> labelList(runtimeDeps)))
+    sortKeys(
+      List(
+        "visibility" -> renderList(Doc.text("["), List("//visibility:public"), Doc.text("]"))(
+          quote
+        ),
+        "deps" -> labelList(deps),
+        "srcs" -> sources.render,
+        "exports" -> labelList(exports),
+        "runtime_deps" -> labelList(runtimeDeps)
+      )
+    )
   }
 }
