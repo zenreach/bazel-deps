@@ -11,6 +11,12 @@ scala_library(name = "depsmodel",
               ],
               visibility = ["//visibility:public"])
 
+filegroup(
+     name = "logconfig",
+     srcs = [ "logback.xml" ],
+     visibility = ["//visibility:public"]
+ )
+
 scala_library(name = "commands",
               srcs = ["Commands.scala"],
               deps = ["@com_monovore_decline//:decline", ":depsmodel"],
@@ -95,6 +101,8 @@ scala_library(name = "makedeps",
 
 scala_binary(name = "parseproject",
              srcs = ["ParseProject.scala"],
+             resources = [ ":logconfig" ],
+             resource_strip_prefix = "src/scala/com/github/johnynek/bazel_deps",
              deps = [
                  ":makedeps",
                  ":commands",
